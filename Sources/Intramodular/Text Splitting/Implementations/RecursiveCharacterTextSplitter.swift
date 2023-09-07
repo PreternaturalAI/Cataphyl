@@ -12,7 +12,7 @@ public struct RecursiveCharacterTextSplitter: Codable, TextSplitter {
     
     public init(
         configuration: TextSplitConfiguration,
-        separators: [String] = ["\n\n", "\n", " ", ""]
+        separators: [String] = ["\n\n", "\n", " "]
     ) {
         self.configuration = configuration
         self.separators = separators

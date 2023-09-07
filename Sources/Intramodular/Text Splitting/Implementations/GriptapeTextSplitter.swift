@@ -5,24 +5,27 @@
 import Foundation
 import Swallow
 
+/// A text splitter builder inspired from https://github.com/griptape-ai/griptape.
 public protocol GriptapeTextSplitter: TextSplitter {
-    var separators: [GriptapeChunkSeparator] { get }
+    @ArrayBuilder
+    var separators: [GriptapeTextSeparator] { get }
 }
 
 extension GriptapeTextSplitter {
-    public var separators: [GriptapeChunkSeparator] {
-        [GriptapeChunkSeparator(" ")]
+    @ArrayBuilder
+    public var separators: [GriptapeTextSeparator] {
+        GriptapeTextSeparator(" ")
     }
     
     public func split(text: String) throws -> [PlainTextSplit] {
-        try chunkRecursively(chunk: PlainTextSplit(source: text), currentSeparator: nil)
+        try splitRecursively(chunk: PlainTextSplit(source: text), currentSeparator: nil)
     }
     
-    public func chunkRecursively(
+    private func splitRecursively(
         chunk: PlainTextSplit,
-        currentSeparator: GriptapeChunkSeparator? = nil
+        currentSeparator: GriptapeTextSeparator? = nil
     ) throws -> [PlainTextSplit] {
-        let maximumSplitSize = configuration.maximumSplitSize
+        let maximumSplitSize = configuration.maximumSplitSize ?? Int.max
         let tokenCount = try configuration.tokenizer.tokenCount(for: chunk.text)
         
         if tokenCount <= maximumSplitSize {
@@ -33,7 +36,7 @@ extension GriptapeTextSplitter {
             var tokensCount = 0
             let halfTokenCount = tokenCount / 2
             
-            let separators: [GriptapeChunkSeparator]
+            let separators: [GriptapeTextSeparator]
             
             if let currentSeparator {
                 separators = Array(self.separators[try self.separators.firstIndex(of: currentSeparator).unwrap()...])
@@ -46,9 +49,8 @@ extension GriptapeTextSplitter {
                     !$0.isEmpty
                 }
                 
-                if !subchunks.isEmpty {
-                    for (index, subchunk) in subchunks.enumerated() {
-                        var subchunk = subchunk
+                if subchunks.count > 1 {
+                    for (index, var subchunk) in subchunks.enumerated() {
                         if index < subchunks.count {
                             if separator.isPrefix {
                                 subchunk = separator.value + subchunk
@@ -61,7 +63,7 @@ extension GriptapeTextSplitter {
                         
                         if Double(abs(tokensCount - halfTokenCount)) < balanceDiff {
                             balanceIndex = index
-                            balanceDiff = abs(Double(tokensCount) - Double(halfTokenCount))
+                            balanceDiff = Double(abs(tokensCount - halfTokenCount))
                         }
                     }
                     
@@ -69,25 +71,23 @@ extension GriptapeTextSplitter {
                     var secondSubchunk: PlainTextSplit
                     
                     if separator.isPrefix {
-                        firstSubchunk = PlainTextSplit(stringLiteral: separator.value) + subchunks[..<(balanceIndex + 1)].joined(separator: separator.value)
-                        secondSubchunk = separator.value + subchunks[(balanceIndex + 1)...].joined(separator: separator.value)
+                        firstSubchunk = separator.value + subchunks.prefix(upTo: balanceIndex + 1).joined(separator: separator.value)
+                        secondSubchunk = separator.value + subchunks.suffix(from: balanceIndex + 1).joined(separator: separator.value)
                     } else {
-                        firstSubchunk = subchunks[..<(balanceIndex + 1)].joined(separator: separator.value) + separator.value
-                        secondSubchunk = subchunks[(balanceIndex + 1)...].joined(separator: separator.value)
+                        firstSubchunk = subchunks.prefix(upTo: balanceIndex + 1).joined(separator: separator.value) + separator.value
+                        secondSubchunk = subchunks.suffix(from: balanceIndex + 1).joined(separator: separator.value)
                     }
                     
-                    let firstSubchunkRec = try chunkRecursively(chunk: firstSubchunk.trimmingCharacters(in: .whitespaces), currentSeparator: separator)
-                    let secondSubchunkRec = try chunkRecursively(chunk: secondSubchunk.trimmingCharacters(in: .whitespaces), currentSeparator: separator)
+                    let firstSubchunkRec = try splitRecursively(
+                        chunk: firstSubchunk,
+                        currentSeparator: separator
+                    )
+                    let secondSubchunkRec = try splitRecursively(
+                        chunk: secondSubchunk,
+                        currentSeparator: separator
+                    )
                     
-                    if !firstSubchunkRec.isEmpty && !secondSubchunkRec.isEmpty {
-                        return firstSubchunkRec + secondSubchunkRec
-                    } else if !firstSubchunkRec.isEmpty {
-                        return firstSubchunkRec
-                    } else if !secondSubchunkRec.isEmpty {
-                        return secondSubchunkRec
-                    } else {
-                        return []
-                    }
+                    return firstSubchunkRec + secondSubchunkRec
                 }
             }
             
@@ -98,7 +98,7 @@ extension GriptapeTextSplitter {
 
 // MARK: - Auxiliary
 
-public struct GriptapeChunkSeparator: Hashable {
+public struct GriptapeTextSeparator: Hashable {
     public let value: String
     public let isPrefix: Bool
     
@@ -108,3 +108,8 @@ public struct GriptapeChunkSeparator: Hashable {
     }
 }
 
+extension GriptapeTextSeparator: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self.init(value, isPrefix: false)
+    }
+}

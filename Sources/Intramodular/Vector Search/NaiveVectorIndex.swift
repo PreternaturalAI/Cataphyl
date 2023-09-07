@@ -7,6 +7,8 @@ import Foundation
 import Swallow
 
 /// A naive vector index that uses an in-memory ordered dictionary to store vectors.
+///
+/// This index is 
 public final class NaiveVectorIndex<Key: Hashable>: VectorIndex {
     public var storage: OrderedDictionary<Key, [Double]> = []
     

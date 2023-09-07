@@ -16,7 +16,7 @@ public struct NaturalLanguageTextSplitter: TextSplitter {
         text: String
     ) throws -> [PlainTextSplit] {
         let maximumSplitSize = configuration.maximumSplitSize ?? Int.maximum
-        let sentences = segmentTextIntoSentences(text: text)
+        let sentences = segmentTextIntoSentences(text)
         var chunks: [PlainTextSplit] = []
         var currentChunk = PlainTextSplit()
         var currentSplitSize = 0
@@ -40,7 +40,7 @@ public struct NaturalLanguageTextSplitter: TextSplitter {
     }
     
     private func segmentTextIntoSentences(
-        text: String
+        _ text: String
     ) -> [PlainTextSplit] {
         NLTokenizer.tokens(for: text, unit: .sentence).map {
             PlainTextSplit($0, in: text)
@@ -49,8 +49,7 @@ public struct NaturalLanguageTextSplitter: TextSplitter {
 }
 
 extension String {
-    fileprivate func plainText() -> String {
-        self.removingCharacters(in: "\"`()%$#@[]{}<>")
-            .replacingOccurrences(of: "\n", with: " ")
+    fileprivate func _cleanTextByRemovingSymbols() -> String {
+        self.removingCharacters(in: "\"`()%$#@[]{}<>").replacingOccurrences(of: "\n", with: " ")
     }
 }

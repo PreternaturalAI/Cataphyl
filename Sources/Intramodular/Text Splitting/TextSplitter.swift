@@ -33,10 +33,10 @@ public struct TextSplitConfiguration: Codable, Hashable, Sendable {
         tokenizer: any Codable & TextTokenizer = _StringCharacterTokenizer()
     ) throws {
         self.maximumSplitSize = maximumSplitSize
-        self.maxSplitOverlap = maxSplitOverlap
+        self.maxSplitOverlap = maxSplitOverlap ?? 0
         self.tokenizer = tokenizer
         
-        if let maximumSplitSize {
+        if let maximumSplitSize, let maxSplitOverlap {
             guard maximumSplitSize > maxSplitOverlap else {
                 assertionFailure(TextSplitterError.invalidConfiguration)
                 
@@ -67,9 +67,7 @@ extension TextSplitter {
         var currentChunk: [PlainTextSplit] = []
         var currentTotal = 0
         
-        // Iterate through the provided text splits.
         for split in splits {
-            // Check if adding the current split to the total length along with the separator would exceed the desired chunk size
             let length = try configuration.tokenizer.tokenCount(for: split.text)
             
             if (currentTotal + length + (currentChunk.count > 0 ? separatorLength : 0)) > maximumSplitSize {
@@ -80,15 +78,14 @@ extension TextSplitter {
                 }
                 
                 if currentChunk.count > 0 {
-                    // If the current document has content, append the joined document to the final list of documents.
                     if let chunk = join(chunks: currentChunk, separator: separator) {
                         if !chunk.text.contains(" ") {
                             print(chunk)
                         }
+                        
                         chunks.append(chunk)
                     }
                     
-                    // Continue removing the first element of the current document until it doesn't exceed the specified chunk overlap or chunk size
                     while currentTotal > configuration.maxSplitOverlap || (currentTotal + length + (currentChunk.count > 0 ? separatorLength : 0) > configuration.maximumSplitSize && currentTotal > 0) {
                         if !currentChunk.isEmpty {
                             currentTotal -= try configuration.tokenizer.tokenCount(for: currentChunk[0].text) + (currentChunk.count > 0 ? separatorLength : 0)
@@ -101,21 +98,18 @@ extension TextSplitter {
                 }
             }
             
-            // Add the current split to the current document and update the total length.
             currentChunk.append(split)
             
             currentTotal += length + (separatorLength * (currentChunk.count > 1 ? 1 : 0))
         }
         
-        // After iterating through all splits, join any remaining elements in the current document and add it to the final list of documents
-        if let doc = join(chunks: currentChunk, separator: separator) {
-            chunks.append(doc)
+        if let text = join(chunks: currentChunk, separator: separator) {
+            chunks.append(text)
         }
         
         return chunks
     }
     
-    /// This function takes an array of strings (`chunks`) and a separator as input, joins the strings using the separator, and trims whitespace from the beginning and end of the resulting string. If the resulting string is empty, the function returns `nil`, otherwise it returns the joined and trimmed string
     private func join(
         chunks: [PlainTextSplit],
         separator: String
