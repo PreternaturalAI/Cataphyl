@@ -20,6 +20,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/vmanot/CorePersistence.git", branch: "main"),
+        .package(url: "https://github.com/vmanot/LargeLanguageModels.git", branch: "main"),
         .package(url: "https://github.com/vmanot/Swallow.git", branch: "master")
     ],
     targets: [
@@ -27,6 +28,7 @@ let package = Package(
             name: "Cataphyl",
             dependencies: [
                 "CorePersistence",
+                "LargeLanguageModels",
                 "Swallow"
             ],
             path: "Sources"

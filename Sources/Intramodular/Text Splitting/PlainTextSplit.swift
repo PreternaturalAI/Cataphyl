@@ -7,7 +7,7 @@ import Swallow
 
 /// A singular text split from some source plain-text document.
 public struct PlainTextSplit: Codable, Hashable, PlainTextDocumentProtocol {
-    public typealias Chunk = PlainTextDocument.Chunk
+    public typealias Chunk = PlainTextDocument.SequentialSelection
     
     public var text: String {
         components.lazy.map(\.text).joined()

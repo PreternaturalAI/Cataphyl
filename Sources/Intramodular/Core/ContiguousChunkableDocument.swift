@@ -2,7 +2,6 @@
 // Copyright (c) Vatsal Manot
 //
 
-import CryptoKit
 import FoundationX
 import Swallow
 
@@ -19,4 +18,3 @@ public protocol _ContiguousDocumentChunk: Identifiable, Sendable where ID: Senda
     
     var span: Span { get }
 }
-

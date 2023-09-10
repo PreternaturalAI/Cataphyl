@@ -8,8 +8,8 @@ import Swallow
 
 /// A naive vector index that uses an in-memory ordered dictionary to store vectors.
 ///
-/// This index is 
-public final class NaiveVectorIndex<Key: Hashable>: VectorIndex {
+/// This index is
+public struct NaiveVectorIndex<Key: Hashable>: VectorIndex {
     public var storage: OrderedDictionary<Key, [Double]> = []
     
     public init() {
@@ -17,10 +17,17 @@ public final class NaiveVectorIndex<Key: Hashable>: VectorIndex {
     }
     
     @inline(__always)
-    public func insert(
+    public mutating func insert(
         contentsOf pairs: some Sequence<(Key, [Double])>
     ) {
         self.storage = OrderedDictionary(uniqueKeysWithValues: pairs.lazy.map({ ($0, $1) }))
+    }
+        
+    @inline(__always)
+    public mutating func remove(_ items: Set<Key>) {
+        for item in items {
+            storage.removeValue(forKey: item)
+        }
     }
     
     @inline(__always)
@@ -40,13 +47,6 @@ public final class NaiveVectorIndex<Key: Hashable>: VectorIndex {
     }
     
     @inline(__always)
-    public func remove(_ items: Set<Key>) {
-        for item in items {
-            storage.removeValue(forKey: item)
-        }
-    }
-    
-    @inline(__always)
     private func rank(
         query: [Double],
         topK: Int,
@@ -59,7 +59,7 @@ public final class NaiveVectorIndex<Key: Hashable>: VectorIndex {
             similarities[$0] > similarities[$1]
         })
         let topIndices = Array(sortedCollections.prefix(topK))
-
+        
         return topIndices.map {
             VectorIndexSearchResult(
                 item: storage[$0].key,

@@ -17,7 +17,9 @@ extension GriptapeTextSplitter {
         GriptapeTextSeparator(" ")
     }
     
-    public func split(text: String) throws -> [PlainTextSplit] {
+    public func split(
+        text: String
+    ) throws -> [PlainTextSplit] {
         try splitRecursively(chunk: PlainTextSplit(source: text), currentSeparator: nil)
     }
     

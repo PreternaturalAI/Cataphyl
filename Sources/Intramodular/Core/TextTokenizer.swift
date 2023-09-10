@@ -2,16 +2,23 @@
 // Copyright (c) Vatsal Manot
 //
 
+import Merge
 import Swallow
+
+/// An asynchronous text tokenizer.
+public protocol AsyncTextTokenizer<Token>: Hashable, Sendable {
+    associatedtype Token: Codable, Hashable, Sendable
+    
+    func encode(_ input: String) async throws -> [Token]
+    func decode(_ tokens: [Token]) async throws -> String
+    
+    func tokenCount(for input: String) async throws -> Int
+}
 
 /// A synchronous text tokenizer.
 ///
 /// The tokenizer *must* be preheated before use.
-public protocol TextTokenizer<Token>: Hashable, Sendable {
-    associatedtype Token: Codable, Hashable, Sendable
-    
-    static func _preheat() async throws
-    
+public protocol TextTokenizer<Token>: AsyncTextTokenizer, _MaybeAsyncProtocol, Hashable, Sendable {
     func encode(_ input: String) throws -> [Token]
     func decode(_ tokens: [Token]) throws -> String
     

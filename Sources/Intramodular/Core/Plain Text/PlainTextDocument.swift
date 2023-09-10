@@ -6,8 +6,9 @@ import FoundationX
 import HadeanIdentifiers
 import Swallow
 
+/// A document that represents plain-text.
 public struct PlainTextDocument: Hashable, PlainTextDocumentProtocol, Sendable {
-    public typealias Chunk = PlainTextDocumentChunk
+    public typealias Chunk = SequentialSelection
     
     public let text: String
     

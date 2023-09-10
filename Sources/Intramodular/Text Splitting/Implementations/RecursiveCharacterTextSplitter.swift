@@ -19,26 +19,28 @@ public struct RecursiveCharacterTextSplitter: Codable, TextSplitter {
     }
 }
 
+// MARK: - Implementation
+
 extension RecursiveCharacterTextSplitter {
     public func split(
         text: String
     ) throws -> [PlainTextSplit] {
-        try split(PlainTextSplit(source: text), topLevel: true)
+        try _split(PlainTextSplit(source: text), topLevel: true)
     }
     
-    private func split(
-        _ givenSplit: PlainTextSplit,
+    private func _split(
+        _ input: PlainTextSplit,
         topLevel: Bool
     ) throws -> [PlainTextSplit] {
         let maximumSplitSize = configuration.maximumSplitSize ?? Int.maximum
-        let separator = try applicableSeparator(for: givenSplit)
-        let splits = givenSplit
+        let separator = try _bestSeparator(for: input)
+        let splits = input
             .components(separatedBy: separator)
             .compactMap({ $0.trimmingCharacters(in: .whitespaces) })
             .filter({ !$0.isEmpty })
         
-        if try configuration.tokenizer.tokenCount(for: givenSplit.text) < maximumSplitSize {
-            return [givenSplit]
+        if try configuration.tokenizer.tokenCount(for: input.text) < maximumSplitSize {
+            return [input]
         }
         
         var result: [PlainTextSplit] = []
@@ -61,7 +63,7 @@ extension RecursiveCharacterTextSplitter {
                     validSplits.removeAll()
                 }
                 
-                let otherInfo = try self.split(split, topLevel: false)
+                let otherInfo = try self._split(split, topLevel: false)
                 
                 result.append(contentsOf: otherInfo)
             }
@@ -89,7 +91,7 @@ extension RecursiveCharacterTextSplitter {
         }
     }
     
-    private func applicableSeparator(
+    private func _bestSeparator(
         for split: PlainTextSplit
     ) throws -> String {
         var result = try separators.last.unwrap()
