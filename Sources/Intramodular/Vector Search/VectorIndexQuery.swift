@@ -16,6 +16,10 @@ public protocol VectorIndexQuery<Item> {
 // MARK: - Implemented Conformances
 
 public enum VectorIndexQueries {
+    /// A k-nearest neighbor search.
+    ///
+    /// Reference:
+    /// - https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html
     public struct TopK<Item>: VectorIndexQuery {
         public let vector: [Double]
         public let maximumNumberOfResults: Int
@@ -28,6 +32,7 @@ public enum VectorIndexQueries {
 }
 
 extension VectorIndexQuery {
+    /// A query representign a k-nearest neighbor search for a given vector.
     public static func topMatches<T>(
         for vector: [Double],
         maximumNumberOfResults: Int

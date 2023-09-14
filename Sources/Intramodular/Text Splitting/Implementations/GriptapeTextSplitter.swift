@@ -11,6 +11,8 @@ public protocol GriptapeTextSplitter: TextSplitter {
     var separators: [GriptapeTextSeparator] { get }
 }
 
+// MARK: - Implementation
+
 extension GriptapeTextSplitter {
     @ArrayBuilder
     public var separators: [GriptapeTextSeparator] {
