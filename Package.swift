@@ -19,8 +19,8 @@ let package = Package(
         )
     ],
     dependencies: [
+        .package(url: "https://github.com/PreternaturalAI/LargeLanguageModels.git", branch: "main"),
         .package(url: "https://github.com/vmanot/CorePersistence.git", branch: "main"),
-        .package(url: "https://github.com/vmanot/LargeLanguageModels.git", branch: "main"),
         .package(url: "https://github.com/vmanot/Swallow.git", branch: "master")
     ],
     targets: [
