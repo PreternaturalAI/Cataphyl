@@ -6,9 +6,9 @@ import NaturalLanguage
 import Swallow
 
 public struct NaturalLanguageTextSplitter: TextSplitter {
-    public var configuration: TextSplitConfiguration
+    public var configuration: TextSplitterConfiguration
     
-    public init(configuration: TextSplitConfiguration) {
+    public init(configuration: TextSplitterConfiguration) {
         self.configuration = configuration
     }
     

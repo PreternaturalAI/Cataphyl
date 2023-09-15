@@ -7,11 +7,11 @@ import FoundationX
 import Swallow
 
 public struct RecursiveCharacterTextSplitter: Codable, TextSplitter {
-    public let configuration: TextSplitConfiguration
+    public let configuration: TextSplitterConfiguration
     public let separators: [String]
     
     public init(
-        configuration: TextSplitConfiguration,
+        configuration: TextSplitterConfiguration,
         separators: [String] = ["\n\n", "\n", " "]
     ) {
         self.configuration = configuration

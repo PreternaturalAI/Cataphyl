@@ -8,8 +8,8 @@ import Swallow
 
 /// A naive vector index that uses an in-memory ordered dictionary to store vectors.
 ///
-/// This index is
-public struct NaiveVectorIndex<Key: Hashable>: VectorIndex {
+/// While the cosine-similarity metric used to calculate scores is hardware accelerated, this index is still termed 'naive' because it uses a simple brute-force search as opposed to something optimized for large amounts of data (such as ANN/HNSW).
+public struct NaiveVectorIndex<Key: Hashable>: Initiable, MutableVectorIndex {
     public var storage: OrderedDictionary<Key, [Double]> = []
     
     public init() {
@@ -22,12 +22,17 @@ public struct NaiveVectorIndex<Key: Hashable>: VectorIndex {
     ) {
         self.storage = OrderedDictionary(uniqueKeysWithValues: pairs.lazy.map({ ($0, $1) }))
     }
-        
+    
     @inline(__always)
     public mutating func remove(_ items: Set<Key>) {
         for item in items {
             storage.removeValue(forKey: item)
         }
+    }
+    
+    @inline(__always)
+    public mutating func removeAll() {
+        storage.removeAll()
     }
     
     @inline(__always)
@@ -76,11 +81,23 @@ extension NaiveVectorIndex: Hashable {
         storage.hash(into: &hasher)
     }
     
-    public static func == (lhs: NaiveVectorIndex, rhs: NaiveVectorIndex) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.storage == rhs.storage
     }
 }
 
+extension NaiveVectorIndex: Sequence {
+    public func makeIterator() -> AnyIterator<Key> {
+        storage.keys.makeIterator().eraseToAnyIterator()
+    }
+}
+
 extension NaiveVectorIndex: Codable where Key: Codable {
+    public init(from decoder: Decoder) throws {
+        self.storage = try OrderedDictionary(uniqueKeysWithValues: Dictionary(from: decoder))
+    }
     
+    public func encode(to encoder: Encoder) throws {
+        try Dictionary(storage).encode(to: encoder)
+    }
 }

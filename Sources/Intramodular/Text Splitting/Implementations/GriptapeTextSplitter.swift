@@ -117,3 +117,23 @@ extension GriptapeTextSeparator: ExpressibleByStringLiteral {
         self.init(value, isPrefix: false)
     }
 }
+
+// MARK: - Implemented Conformances
+
+public enum GriptapeTextSplitters {
+    public struct MarkdownSplitter: GriptapeTextSplitter {
+        public var configuration: Cataphyl.TextSplitterConfiguration
+        
+        public init(configuration: Cataphyl.TextSplitterConfiguration) {
+            self.configuration = configuration
+        }
+        
+        public var separators: [GriptapeTextSeparator] {
+            [
+                GriptapeTextSeparator("````", isPrefix: false),
+                GriptapeTextSeparator("\n\n", isPrefix: false),
+                GriptapeTextSeparator("\n", isPrefix: false)
+            ]
+        }
+    }
+}

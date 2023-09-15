@@ -14,7 +14,7 @@ public struct PlainTextSplit: Codable, Hashable, PlainTextDocumentProtocol {
     }
     
     public var components: [Component]
-        
+    
     public init(components: [Component]) {
         self.components = components
     }
@@ -108,7 +108,7 @@ extension PlainTextSplit {
     }
     
     public func prefix(
-        _ count: Int, 
+        _ count: Int,
         tokenizer: some TextTokenizer
     ) -> Self {
         fatalError()
@@ -276,28 +276,28 @@ extension PlainTextSplit.Component {
 }
 
 /*extension Collection where Element: Collection {
-    func prefixCumulative(_ n: Int) -> [[Element.Element]] {
-        var result: [[Element.Element]] = []
-        var count = 0
-        
-        outerLoop: for subCollection in self {
-            var subResult: [Element.Element] = []
-            for element in subCollection {
-                if count < n {
-                    subResult.append(element)
-                    count += 1
-                } else {
-                    break outerLoop
-                }
-            }
-            result.append(subResult)
-        }
-        
-        return result
-    }
-    
-    func suffixCumulative(_ n: Int) -> [[Element.Element]] {
-        let reversedResult = self.reversed().prefixCumulative(n)
-        return reversedResult.reversed().map { $0.reversed() }
-    }
-}*/
+ func prefixCumulative(_ n: Int) -> [[Element.Element]] {
+ var result: [[Element.Element]] = []
+ var count = 0
+ 
+ outerLoop: for subCollection in self {
+ var subResult: [Element.Element] = []
+ for element in subCollection {
+ if count < n {
+ subResult.append(element)
+ count += 1
+ } else {
+ break outerLoop
+ }
+ }
+ result.append(subResult)
+ }
+ 
+ return result
+ }
+ 
+ func suffixCumulative(_ n: Int) -> [[Element.Element]] {
+ let reversedResult = self.reversed().prefixCumulative(n)
+ return reversedResult.reversed().map { $0.reversed() }
+ }
+ }*/
