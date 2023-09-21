@@ -47,7 +47,7 @@ extension TextSplitter {
                         chunks.append(chunk)
                     }
                     
-                    while currentTotal > configuration.maxSplitOverlap || (currentTotal + length + (currentChunk.count > 0 ? separatorLength : 0) > configuration.maximumSplitSize && currentTotal > 0) {
+                    while currentTotal > configuration.maximumSplitOverlap || (currentTotal + length + (currentChunk.count > 0 ? separatorLength : 0) > configuration.maximumSplitSize && currentTotal > 0) {
                         if !currentChunk.isEmpty {
                             currentTotal -= try configuration.tokenizer.tokenCount(for: currentChunk[0].text) + (currentChunk.count > 0 ? separatorLength : 0)
                             
