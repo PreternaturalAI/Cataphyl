@@ -1,5 +1,4 @@
 # Cataphyl
-
 Cataphyl is a protocol-oriented framework for building consumer-side AI applications on Apple platforms.
 
 It offers a few things right out of the box:
@@ -10,5 +9,6 @@ It offers a few things right out of the box:
 
 - Text Splitters
 
+# License
 
-
+Cataphyl is licensed under the [MIT License](https://vmanot.mit-license.org).
