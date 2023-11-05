@@ -2,8 +2,8 @@
 // Copyright (c) Vatsal Manot
 //
 
+import CorePersistence
 import FoundationX
-import HadeanIdentifiers
 import Swallow
 
 /// A document that represents plain-text.
