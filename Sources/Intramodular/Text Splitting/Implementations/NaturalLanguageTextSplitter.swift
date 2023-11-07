@@ -5,6 +5,7 @@
 import NaturalLanguage
 import Swallow
 
+@RuntimeDiscoverable
 public struct NaturalLanguageTextSplitter: TextSplitter {
     public var configuration: TextSplitterConfiguration
     

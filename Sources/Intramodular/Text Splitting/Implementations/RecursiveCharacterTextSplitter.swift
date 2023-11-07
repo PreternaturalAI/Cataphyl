@@ -6,6 +6,7 @@ import Diagnostics
 import FoundationX
 import Swallow
 
+@RuntimeDiscoverable
 public struct RecursiveCharacterTextSplitter: Codable, TextSplitter {
     public let configuration: TextSplitterConfiguration
     public let separators: [String]
