@@ -47,23 +47,24 @@ extension RecursiveCharacterTextSplitter {
         var validSplits: [PlainTextSplit] = []
         
         for split in splits {
-            if try configuration.tokenizer.tokenCount(for: split.text) < maximumSplitSize {
+            if try configuration.tokenizer.tokenCount(for: split.text) < (maximumSplitSize + (separator.count * validSplits.count - 1)) {
                 validSplits.append(split)
             } else {
                 if !validSplits.isEmpty {
                     let merged = try _naivelyMerge(
                         validSplits,
-                        separator: separator
+                        separator: separator,
+                        topLevel: topLevel
                     )
-                    
-                    try validate(topLevel: merged)
-                    
+                                        
                     result.append(contentsOf: merged)
                     
                     validSplits.removeAll()
                 }
                 
                 let otherInfo = try self._split(split, topLevel: false)
+                
+                try validate(topLevel: otherInfo)
                 
                 result.append(contentsOf: otherInfo)
             }
@@ -72,11 +73,10 @@ extension RecursiveCharacterTextSplitter {
         if !validSplits.isEmpty {
             let merged = try _naivelyMerge(
                 validSplits,
-                separator: separator
+                separator: separator,
+                topLevel: topLevel
             )
-            
-            try validate(topLevel: merged)
-            
+                    
             result.append(contentsOf: merged)
             
             validSplits.removeAll()
@@ -84,11 +84,77 @@ extension RecursiveCharacterTextSplitter {
         
         try _tryAssert(validSplits.isEmpty)
         
-        if topLevel {
-            return result
-        } else {
-            return result
+        try validate(topLevel: result)
+        
+        return result
+    }
+    
+    private func _split2(
+        _ input: PlainTextSplit,
+        topLevel: Bool
+    ) throws -> [PlainTextSplit] {
+        let maximumSplitSize = configuration.maximumSplitSize ?? Int.maximum
+        let maximumSplitOverlap = configuration.maximumSplitOverlap ?? 0
+        
+        let separator = try _bestSeparator(for: input)
+        let splits = input
+            .components(separatedBy: separator)
+            .compactMap({ $0.trimmingCharacters(in: .whitespaces) })
+            .filter({ !$0.isEmpty })
+        
+        if try configuration.tokenizer.tokenCount(for: input.text) < maximumSplitSize {
+            return [input]
         }
+        
+        var result: [PlainTextSplit] = []
+        var current: [PlainTextSplit] = []
+        var total = 0
+        
+        for split in splits {
+            let currentLength = try configuration.tokenizer.tokenCount(for: split.text)
+            
+            if (currentLength + total) > maximumSplitSize {
+                if total > maximumSplitSize {
+                    throw TextSplitterError.maximumSplitSizeExceeded(maximumSplitSize)
+                }
+                
+                if current.count > 0  {
+                    guard let joinedSplit = join(current) else {
+                        assertionFailure()
+                        
+                        throw TextSplitterError.invalidConfiguration
+                    }
+                    
+                    current.append(joinedSplit)
+                    
+                    while (total > maximumSplitOverlap) || ((total + currentLength) > maximumSplitSize && (total > 0)) {
+                        total -= try configuration.tokenizer.tokenCount(for: current[0].text)
+                        
+                        current.removeFirst()
+                    }
+                }
+            }
+            
+            current.append(split)
+            
+            total += currentLength
+        }
+        
+        if !current.isEmpty {
+            if let joinedSplit = join(current) {
+                result.append(joinedSplit)
+            }
+            
+            current.removeAll()
+        }
+        
+        try _tryAssert(current.isEmpty)
+        
+        try _warnOnThrow {
+            try validate(topLevel: result)
+        }
+        
+        return result
     }
     
     private func _bestSeparator(

@@ -18,8 +18,17 @@ public struct PlainTextDocument: Hashable, PlainTextDocumentProtocol, Sendable {
 }
 
 extension PlainTextDocument {
-    public enum TextRange: Codable, Hashable, Sendable {
+    public enum TextRange: Codable, Comparable, Hashable, Sendable {
         case utf16(range: Range<Int>)
+        
+        public static func < (lhs: Self, rhs: Self) -> Bool {
+            switch (lhs, rhs) {
+                case (.utf16(let lhs), .utf16(let rhs)):
+                    assert(!lhs.overlaps(rhs))
+                    
+                    return lhs.lowerBound < rhs.lowerBound
+            }
+        }
     }
     
     public struct ConsecutiveRanges: Codable, CustomStringConvertible, Hashable, Sendable, Sequence {

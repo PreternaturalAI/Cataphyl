@@ -12,6 +12,10 @@ import Swallow
 public struct NaiveVectorIndex<Key: Hashable>: Initiable, MutableVectorIndex {
     public var storage: OrderedDictionary<Key, [Double]> = []
     
+    public var keys: [Key] {
+        storage.orderedKeys
+    }
+    
     public init() {
         
     }

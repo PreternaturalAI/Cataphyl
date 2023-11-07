@@ -19,39 +19,39 @@ public protocol TextSplitter: Logging {
 extension TextSplitter {
     public func _naivelyMerge(
         _ splits: [PlainTextSplit],
-        separator: String
+        separator: String,
+        topLevel: Bool 
     ) throws -> [PlainTextSplit] {
         let maximumSplitSize = configuration.maximumSplitSize ?? Int.maximum
+        let maximumSplitOverlap = configuration.maximumSplitOverlap ?? 0
         let separatorLength = try configuration.tokenizer.tokenCount(for: separator)
         
-        var chunks: [PlainTextSplit] = []
-        var currentChunk: [PlainTextSplit] = []
+        var result: [PlainTextSplit] = []
+        var currentSplits: [PlainTextSplit] = []
         var currentTotal = 0
         
         for split in splits {
             let length = try configuration.tokenizer.tokenCount(for: split.text)
             
-            if (currentTotal + length + (currentChunk.count > 0 ? separatorLength : 0)) > maximumSplitSize {
+            func effectiveSeparatorLength() -> Int {
+                separatorLength * (currentSplits.count > 1 ? 1 : 0)
+            }
+            
+            if (currentTotal + length + effectiveSeparatorLength()) > maximumSplitSize {
                 if currentTotal > maximumSplitSize {
-                    logger.warning(
-                        TextSplitterError.maximumSplitSizeExceeded(maximumSplitSize)
-                    )
+                    throw TextSplitterError.maximumSplitSizeExceeded(maximumSplitSize)
                 }
                 
-                if currentChunk.count > 0 {
-                    if let chunk = join(chunks: currentChunk, separator: separator) {
-                        if !chunk.text.contains(" ") {
-                            print(chunk)
-                        }
-                        
-                        chunks.append(chunk)
+                if currentSplits.count > 0 {
+                    if let joined = join(currentSplits) {
+                        result.append(joined)
                     }
                     
-                    while currentTotal > configuration.maximumSplitOverlap || (currentTotal + length + (currentChunk.count > 0 ? separatorLength : 0) > configuration.maximumSplitSize && currentTotal > 0) {
-                        if !currentChunk.isEmpty {
-                            currentTotal -= try configuration.tokenizer.tokenCount(for: currentChunk[0].text) + (currentChunk.count > 0 ? separatorLength : 0)
+                    while currentTotal > maximumSplitOverlap || (currentTotal + length + effectiveSeparatorLength() > configuration.maximumSplitSize && currentTotal > 0) {
+                        if !currentSplits.isEmpty {
+                            currentTotal -= try configuration.tokenizer.tokenCount(for: currentSplits[0].text) + effectiveSeparatorLength()
                             
-                            currentChunk.removeFirst()
+                            currentSplits.removeFirst()
                         } else {
                             break
                         }
@@ -59,25 +59,37 @@ extension TextSplitter {
                 }
             }
             
-            currentChunk.append(split)
+            currentSplits.append(split)
             
-            currentTotal += length + (separatorLength * (currentChunk.count > 1 ? 1 : 0))
+            currentTotal += length + (separatorLength * (currentSplits.count > 1 ? 1: 0))
         }
         
-        if let text = join(chunks: currentChunk, separator: separator) {
-            chunks.append(text)
+        if let text = join(currentSplits, separator: separator) {
+            result.append(text)
         }
         
-        return chunks
+        if topLevel {
+            try validate(topLevel: result)
+        }
+        
+        return result
     }
     
-    private func join(
-        chunks: [PlainTextSplit],
-        separator: String
+    func join(
+        _ splits: [PlainTextSplit],
+        separator: String? = nil
     ) -> PlainTextSplit? {
-        let text = chunks
-            .joined(separator: separator)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let text: PlainTextSplit
+        
+        if let separator {
+            text = splits
+                .joined(separator: separator)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            text = splits
+                .joined()
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         
         if text.isEmpty {
             return nil
@@ -89,12 +101,20 @@ extension TextSplitter {
     public func validate(
         topLevel splits: [PlainTextSplit]
     ) throws {
+        guard let maximumSplitSize = configuration.maximumSplitSize else {
+            return
+        }
+        
+        if let biggerThanExpectedSplit = try splits.first(where: {
+            try configuration.tokenizer.tokenCount(for: $0.text) > maximumSplitSize
+        }) {
+            let size = try configuration.tokenizer.tokenCount(for: biggerThanExpectedSplit.text)
+            
+            throw TextSplitterError.maximumSplitSizeExceeded(size)
+        }
+
         let isSmallerThanExpected = try splits.consecutives().contains {
-            if let maximumSplitSize = configuration.maximumSplitSize {
-                return try configuration.tokenizer.tokenCount(for: ($0.0 + $0.1).text) < maximumSplitSize
-            } else {
-                return false
-            }
+            return try configuration.tokenizer.tokenCount(for: ($0.0 + $0.1).text) < maximumSplitSize
         }
         
         if isSmallerThanExpected {

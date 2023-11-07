@@ -181,8 +181,12 @@ extension PlainTextSplit: ExpressibleByStringLiteral {
 // MARK: - Auxiliary
 
 extension Sequence where Element == PlainTextSplit {
-    public func joined(separator: String) -> PlainTextSplit {
+    public func joined(separator: String) -> Element {
         .init(components: Array(lazy.flatMap({ $0.components }).interspersed(with: .inserted(separator))))
+    }
+    
+    public func joined() -> Element {
+        Element(components: Array(lazy.flatMap({ $0.components })))
     }
 }
 

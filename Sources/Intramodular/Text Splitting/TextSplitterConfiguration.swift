@@ -11,6 +11,7 @@ public enum TextSplitterError: Error {
     case invalidConfiguration
     case maximumSplitSizeExceeded(Int)
     case topLevelSplitsMoreGranularThanExpected([PlainTextSplit])
+    case unknown
 }
 
 public struct TextSplitterConfiguration: Codable, Hashable, Sendable {
