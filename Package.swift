@@ -20,8 +20,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/PreternaturalAI/LargeLanguageModels.git", branch: "main"),
+        .package(url: "https://github.com/unum-cloud/usearch", branch: "main"),
         .package(url: "https://github.com/vmanot/CorePersistence.git", branch: "main"),
-        .package(url: "https://github.com/vmanot/Swallow.git", branch: "master")
+        .package(url: "https://github.com/vmanot/Swallow.git", branch: "master"),
     ],
     targets: [
         .target(
@@ -29,7 +30,8 @@ let package = Package(
             dependencies: [
                 "CorePersistence",
                 "LargeLanguageModels",
-                "Swallow"
+                "Swallow",
+                .product(name: "USearch", package: "usearch")
             ],
             path: "Sources"
         ),
