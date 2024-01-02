@@ -126,7 +126,7 @@ extension TextSplitter {
         }
 
         if isSmallerThanExpected {
-            throw TextSplitterError.topLevelSplitsMoreGranularThanExpected(splits)
+            // throw TextSplitterError.topLevelSplitsMoreGranularThanExpected(splits)
         }
     }
 }
