@@ -17,6 +17,7 @@ public protocol TextSplitter: Logging {
 }
 
 extension TextSplitter {
+    @_spi(Internal)
     public func _naivelyMerge(
         _ splits: [PlainTextSplit],
         separator: String,
@@ -36,15 +37,15 @@ extension TextSplitter {
             func effectiveSeparatorLength() -> Int {
                 separatorLength * (currentSplits.count > 1 ? 1 : 0)
             }
-            
+                        
             if (currentTotal + length + effectiveSeparatorLength()) > maximumSplitSize {
                 if currentTotal > maximumSplitSize {
                     throw TextSplitterError.maximumSplitSizeExceeded(maximumSplitSize)
                 }
                 
                 if currentSplits.count > 0 {
-                    if let joined = join(currentSplits) {
-                        result.append(joined)
+                    if let concatenated = _concatenate(currentSplits) {
+                        result.append(concatenated)
                     }
                     
                     while currentTotal > maximumSplitOverlap || (currentTotal + length + effectiveSeparatorLength() > configuration.maximumSplitSize && currentTotal > 0) {
@@ -64,7 +65,7 @@ extension TextSplitter {
             currentTotal += length + (separatorLength * (currentSplits.count > 1 ? 1: 0))
         }
         
-        if let text = join(currentSplits, separator: separator) {
+        if let text = _concatenate(currentSplits, separator: separator) {
             result.append(text)
         }
         
@@ -75,7 +76,7 @@ extension TextSplitter {
         return result
     }
     
-    func join(
+    func _concatenate(
         _ splits: [PlainTextSplit],
         separator: String? = nil
     ) -> PlainTextSplit? {
@@ -113,10 +114,17 @@ extension TextSplitter {
             throw TextSplitterError.maximumSplitSizeExceeded(size)
         }
 
-        let isSmallerThanExpected = try splits.consecutives().contains {
-            return try configuration.tokenizer.tokenCount(for: ($0.0 + $0.1).text) < maximumSplitSize
+        let consecutives = Array(splits.consecutives().enumerated())
+        let isSmallerThanExpected = try consecutives.contains { (index: Int, pair: (PlainTextSplit, PlainTextSplit)) -> Bool in
+            let count = try configuration.tokenizer.tokenCount(for: (pair.0 + pair.1).text)
+            
+            if index == consecutives.lastIndex {
+                return false
+            }
+
+            return count < maximumSplitSize
         }
-        
+
         if isSmallerThanExpected {
             throw TextSplitterError.topLevelSplitsMoreGranularThanExpected(splits)
         }

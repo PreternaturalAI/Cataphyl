@@ -13,7 +13,7 @@ public struct RecursiveCharacterTextSplitter: Codable, TextSplitter {
     
     public init(
         configuration: TextSplitterConfiguration,
-        separators: [String] = ["\n\n", "\n", " "]
+        separators: [String] = ["\n\n", "\n", ".", " ", ""]
     ) {
         self.configuration = configuration
         self.separators = separators
@@ -40,7 +40,7 @@ extension RecursiveCharacterTextSplitter {
             .compactMap({ $0.trimmingCharacters(in: .whitespaces) })
             .filter({ !$0.isEmpty })
         
-        if try configuration.tokenizer.tokenCount(for: input.text) < maximumSplitSize {
+        if try configuration.tokenizer.tokenCount(for: input.text) <= maximumSplitSize {
             return [input]
         }
         
@@ -48,14 +48,14 @@ extension RecursiveCharacterTextSplitter {
         var validSplits: [PlainTextSplit] = []
         
         for split in splits {
-            if try configuration.tokenizer.tokenCount(for: split.text) < (maximumSplitSize + (separator.count * validSplits.count - 1)) {
+            if try configuration.tokenizer.tokenCount(for: split.text) < (maximumSplitSize + (separator.count * (validSplits.count > 1 ? 1 : 0))) {
                 validSplits.append(split)
             } else {
                 if !validSplits.isEmpty {
                     let merged = try _naivelyMerge(
                         validSplits,
                         separator: separator,
-                        topLevel: topLevel
+                        topLevel: false
                     )
                                         
                     result.append(contentsOf: merged)
@@ -63,11 +63,9 @@ extension RecursiveCharacterTextSplitter {
                     validSplits.removeAll()
                 }
                 
-                let otherInfo = try self._split(split, topLevel: false)
-                
-                try validate(topLevel: otherInfo)
-                
-                result.append(contentsOf: otherInfo)
+                let otherSplits = try self._split(split, topLevel: false)
+                                
+                result.append(contentsOf: otherSplits)
             }
         }
         
@@ -75,7 +73,7 @@ extension RecursiveCharacterTextSplitter {
             let merged = try _naivelyMerge(
                 validSplits,
                 separator: separator,
-                topLevel: topLevel
+                topLevel: false
             )
                     
             result.append(contentsOf: merged)
@@ -85,7 +83,9 @@ extension RecursiveCharacterTextSplitter {
         
         try _tryAssert(validSplits.isEmpty)
         
-        try validate(topLevel: result)
+        if topLevel {
+            try validate(topLevel: result)
+        }
         
         return result
     }
@@ -120,7 +120,7 @@ extension RecursiveCharacterTextSplitter {
                 }
                 
                 if current.count > 0  {
-                    guard let joinedSplit = join(current) else {
+                    guard let joinedSplit = _concatenate(current) else {
                         assertionFailure()
                         
                         throw TextSplitterError.invalidConfiguration
@@ -142,7 +142,7 @@ extension RecursiveCharacterTextSplitter {
         }
         
         if !current.isEmpty {
-            if let joinedSplit = join(current) {
+            if let joinedSplit = _concatenate(current) {
                 result.append(joinedSplit)
             }
             
