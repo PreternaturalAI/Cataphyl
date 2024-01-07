@@ -17,6 +17,14 @@ public protocol TextSplitter: Logging {
 }
 
 extension TextSplitter {
+    public func split(
+        _ text: some PlainTextDocumentProtocol
+    ) throws -> [PlainTextSplit] {
+        try split(text: text.text)
+    }
+}
+
+extension TextSplitter {
     @_spi(Internal)
     public func _naivelyMerge(
         _ splits: [PlainTextSplit],
@@ -39,7 +47,7 @@ extension TextSplitter {
             }
                         
             if (currentTotal + length + effectiveSeparatorLength()) > maximumSplitSize {
-                if currentTotal > maximumSplitSize {
+                if currentTotal > maximumSplitSize + 10 {
                     throw TextSplitterError.maximumSplitSizeExceeded(maximumSplitSize)
                 }
                 

@@ -4,6 +4,7 @@
 
 import Accelerate
 import Foundation
+import LargeLanguageModels
 import Swallow
 
 public protocol AsyncVectorIndex<Key> {

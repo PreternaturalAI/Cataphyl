@@ -24,7 +24,15 @@ public struct NaiveVectorIndex<Key: Hashable>: Initiable, MutableVectorIndex {
     public mutating func insert(
         contentsOf pairs: some Sequence<(Key, [Double])>
     ) {
-        self.storage = OrderedDictionary(uniqueKeysWithValues: pairs.lazy.map({ ($0, $1) }))
+        self.storage.merge(
+            OrderedDictionary(
+                uniqueKeysWithValues: pairs.lazy.map({ ($0, $1) })
+            ),
+            uniquingKeysWith: {
+                lhs,
+                rhs in lhs
+            }
+        )
     }
     
     @inline(__always)
@@ -42,7 +50,7 @@ public struct NaiveVectorIndex<Key: Hashable>: Initiable, MutableVectorIndex {
     @inline(__always)
     public func query(
         _ query: some VectorIndexQuery<Key>
-    ) throws -> [VectorIndexSearchResult<NaiveVectorIndex>] {
+    ) throws -> [VectorIndexSearchResult<Self>] {
         switch query {
             case let query as VectorIndexQueries.TopK<Key>:
                 return rank(
@@ -60,7 +68,7 @@ public struct NaiveVectorIndex<Key: Hashable>: Initiable, MutableVectorIndex {
         query: [Double],
         topK: Int,
         using metric: ([Double], [Double]) -> Double
-    ) -> [VectorIndexSearchResult<NaiveVectorIndex>] {
+    ) -> [VectorIndexSearchResult<Self>] {
         let similarities: [Double] = storage.map({ metric($0.value, query) })
         
         // Find the indices of top-k similarity values
